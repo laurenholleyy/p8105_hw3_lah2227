@@ -1,0 +1,10 @@
+---
+title: "p8105_hw3_lah2227"
+author: "Lauren Holley"
+date: "2026-10-14"
+output: github_document
+---
+
+```{r message=FALSE}
+library(tidyverse)
+```
