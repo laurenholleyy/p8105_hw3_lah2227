@@ -7,4 +7,15 @@ output: github_document
 
 ```{r message=FALSE}
 library(tidyverse)
+library(p8105.datasets)
+
+data("ny_noaa")
 ```
+
+```{r}
+ny_noaa_df =
+  ny_noaa |>
+  janitor::clean_names() |>
+  separate(date, into = c("year", "month", "day"), sep = "-")
+```
+
