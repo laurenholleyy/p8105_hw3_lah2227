@@ -31,7 +31,7 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ## Problem 1 
 
-Cleaning the data
+#### Cleaning the data + basic intepretation
 
 ```{r}
 ny_noaa_df =
@@ -45,8 +45,6 @@ ny_noaa_df =
 )
 ```
 
-Snowfall common counts 
-
 ```{r}
 ny_noaa_df |>
   count(snow) |>
@@ -55,7 +53,7 @@ ny_noaa_df |>
 
 The most common value for snowfall was 0mm. This makes sense, as a majority of the days in a year don't typically have snow. More common values were also 25mm, 13mm, and 51mm which correspond to about an inch, half an inch, and two inches of snow. This is all logical for snowfall measurements, as they are typically measured in rounded inch counts.  
 
-Making a plot of average max temperatures.
+#### Plot of average temperature max
 
 ```{r}
 ny_noaa_df |>
@@ -78,7 +76,7 @@ ny_noaa_df |>
 
 Average maximum temperature was consistently higher in the month of July over the years. This is logical with the typical seasonality. January had more variation in max temperatures over the years in comparison to July. It seems like there are a couple of outliers: one that's about -13 degrees around January 1982 and one that's about 14 degrees around July 1988. 
 
-Making a plot of tmax/tmin and normal range snowfall values.
+#### Plots of tmax/tmin and snowfall between 0 and 100mm 
 
 ```{r}
 ggp_tmax_tmin = 
@@ -96,4 +94,74 @@ ggp_snow =
 ggp_tmax_tmin + ggp_snow
 ```
 
+## Problem 2
+
+#### Merging and cleaning the datasets
+
+```{r}
+demo_df =
+  read_csv(
+    "data/nhanes_demo.csv", skip = 4, na = "NA") |>
+  janitor::clean_names() |>
+  mutate(
+    sex = case_match(
+      sex,
+      1 ~ "male",
+      2 ~ "female"),
+    education = case_match(
+      education,
+      1 ~ "Less than high school",
+      2 ~ "High school equivalent",
+      3 ~ "More than high school"
+    ),
+    sex = factor(sex, levels = c("male", "female")),
+education = factor(
+  education,
+  levels = c(
+    "Less than high school",
+    "High school equivalent",
+    "More than high school"
+  ))) |>
+  filter(age >= 21) |>
+  drop_na(sex, age, bmi, education)
+
+accel_df =
+  read_csv(
+    "data/nhanes_accel.csv") |>
+  janitor::clean_names() |>
+  pivot_longer(
+  min1:min1440,
+  names_to = "minute",
+  names_prefix = "min",
+  values_to = "mims"
+  ) |>
+  mutate(minute = as.numeric(minute))
+
+nhanes_df =
+  left_join(demo_df, accel_df, by = "seqn")
+```
+
+#### Demographic Table
+
+```{r}
+demo_df |>
+  group_by(sex, education) |>
+  summarize(
+    n = n()
+  ) |>
+  pivot_wider(names_from = sex, values_from = n) |>
+  knitr::kable()
+```
+
+#### Visualization of Genders vs Education
+
+```{r}
+demo_df |>
+  ggplot(aes(x = age, fill = sex)) +
+  geom_density(alpha = 0.5) +
+  facet_grid(. ~ education) +
+  labs(x = "Age (years)", y = "Density", fill = "Sex")
+```
+
+About half of the study group falls within the more than high school category, with the other half more relatively evenly split between the other two education groups. There are slightly less females than men in the study. For women in the more than high school education group, the age distribution peaks around 20 to 40. The groups with the less than high school education and high school equivalent generally tend to be older. 
 
