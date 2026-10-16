@@ -1,21 +1,99 @@
 ---
 title: "p8105_hw3_lah2227"
 author: "Lauren Holley"
-date: "2026-10-14"
+date: "2026-10-16"
 output: github_document
 ---
 
 ```{r message=FALSE}
 library(tidyverse)
 library(p8105.datasets)
+library(patchwork)
 
 data("ny_noaa")
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
+
+## Problem 1 
+
+Cleaning the data
 
 ```{r}
 ny_noaa_df =
   ny_noaa |>
   janitor::clean_names() |>
-  separate(date, into = c("year", "month", "day"), sep = "-")
+  separate(date, into = c("year", "month", "day"), sep = "-") |>
+  mutate(
+  tmax = as.numeric(tmax) / 10,
+  tmin = as.numeric(tmin) / 10,
+  prcp = prcp / 10
+)
 ```
+
+Snowfall common counts 
+
+```{r}
+ny_noaa_df |>
+  count(snow) |>
+  arrange(desc(n))
+```
+
+The most common value for snowfall was 0mm. This makes sense, as a majority of the days in a year don't typically have snow. More common values were also 25mm, 13mm, and 51mm which correspond to about an inch, half an inch, and two inches of snow. This is all logical for snowfall measurements, as they are typically measured in rounded inch counts.  
+
+Making a plot of average max temperatures.
+
+```{r}
+ny_noaa_df |>
+  filter(month == "01" | month == "07") |>
+  group_by(id, year, month) |>
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+  ) |>
+  ggplot(aes(x = as.numeric(year), y = mean_tmax, group = id, color = month)) +
+  geom_line(alpha = 0.2) +
+  facet_grid(. ~ month) +
+  theme_minimal() +
+  labs(
+    title = "Max Temperature in January vs July",
+    x = "Year",
+    y = "Average Max Temperature (C)"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+Average maximum temperature was consistently higher in the month of July over the years. This is logical with the typical seasonality. January had more variation in max temperatures over the years in comparison to July. It seems like there are a couple of outliers: one that's about -13 degrees around January 1982 and one that's about 14 degrees around July 1988. 
+
+Making a plot of tmax/tmin and normal range snowfall values.
+
+```{r}
+ggp_tmax_tmin = 
+  ny_noaa_df |>
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex()
+
+ggp_snow =
+  ny_noaa_df |>
+  filter(snow > 0, snow < 100) |>
+  ggplot(aes(x = snow, y = factor(year))) +
+  geom_boxplot() +
+  labs(x = "Snowfall (mm)", y = "Year")
+
+ggp_tmax_tmin + ggp_snow
+```
+
 
