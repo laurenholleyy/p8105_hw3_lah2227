@@ -207,3 +207,103 @@ nhanes_df |>
 
 In all education levels, females generally had a slightly higher level of activity in the middle of the day. Activity reached its lowest during the night hours, which  makes sense given the fact that a majority of people are sleeping. Individuals with less than high school educations reached activity peaks at about 600 minutes into the day, with those in the other two education groups having more stable activity distributions from around 600 minutes to around 1100 minutes. 
 
+## Problem 3
+
+#### Merging and cleaning the data
+
+```{r}
+jan_2020_df =
+  read_csv(
+    "data/jan_2020_citi.csv") |>
+  janitor::clean_names() |>
+  mutate(year = 2020, month = "january")
+
+jul_2020_df =
+  read_csv(
+    "data/july_2020_citi.csv") |>
+  janitor::clean_names() |>
+  mutate(year = 2020, month = "july")
+
+jan_2024_df =
+  read_csv(
+    "data/jan_2024_citi.csv") |>
+  janitor::clean_names() |>
+  mutate(year = 2024, month = "january")
+
+jul_2024_df =
+  read_csv(
+    "data/july_2024_citi.csv") |>
+  janitor::clean_names() |>
+  mutate(year = 2024, month = "july")
+
+citi_df =
+  bind_rows(jan_2020_df, jul_2020_df, jan_2024_df, jul_2024_df) |>
+  mutate(
+    month = factor(month, levels = c("january", "july")),
+    weekdays = factor(
+      weekdays,
+      levels = c(
+        "Monday", "Tuesday", "Wednesday", "Thursday",
+        "Friday", "Saturday", "Sunday"
+      )
+    )
+  )
+```
+
+The resulting `citi_df` dataset has `r nrow(citi_df)` rows and `r ncol(citi_df)` columns. It has variable names: `r colnames(citi_df)`. This dataset combines data from January and July of both 2020 and 2024. Each row represents one ride, and the data overall represents 1% of rides with a total duration less than 4 hours during the listed time frames. 
+
+#### Table for Casual vs Citi members
+
+```{r}
+citi_df |>
+  group_by(year, month, member_casual) |>
+  summarize(
+    n = n()
+  ) |>
+  pivot_wider(
+    names_from = member_casual, values_from = n) |>
+  knitr::kable()
+```
+
+There are a higher number of rides for members of Citi Bike versus casual users. Casual riders had a lower number of rides, which is likely the reason for them not needing memberships, so this makes sense. Additionally, there are higher rates of usage for both member types during the July months versus the January months, likely due to nicer weather in the summer. 
+
+#### Table for 5 most popular starting locations
+
+```{r}
+citi_df |>
+  filter(year == 2024, month == "july") |>
+  count(start_station_name) |>
+  arrange(desc(n)) |>
+  head(5) |>
+  knitr::kable()
+```
+
+#### Plot on days of week and ride duration
+
+```{r}
+citi_df |>
+  group_by(year, month, weekdays) |>
+  summarize(
+    median_duration = median(duration, na.rm = TRUE)
+  ) |>
+  ggplot(aes(
+    x = weekdays, 
+    y = median_duration, 
+    color = month, 
+    group = month)) +
+  geom_point(alpha = 0.5) +
+  geom_line() +
+  facet_grid(. ~ year) +
+  labs(
+    x = "Day of Week",
+    y = "Median Duration",
+    color = "Month"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Median duration across both years is lower in the January month than the July month. The highest median duration for rides was on the weekends in July 2020. Generally, Saturdays during all years and months were among the highest median ride durations. 
+
+There were relatively few electric Citi Bikes in 2020, but many more are available now. For data in 2024, make a figure that shows the impact of month, membership status, and bike type on the distribution of ride duration. Comment on your results.
+
+
