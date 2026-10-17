@@ -78,11 +78,12 @@ Average maximum temperature was consistently higher in the month of July over th
 
 #### Plots of tmax/tmin and snowfall between 0 and 100mm 
 
-```{r}
+```{r, fig.width=10, fig.height=8, out.width="100%"}
 ggp_tmax_tmin = 
   ny_noaa_df |>
   ggplot(aes(x = tmin, y = tmax)) +
-  geom_hex()
+  geom_hex() +
+  scale_fill_continuous(breaks = c(10000, 30000, 50000))
 
 ggp_snow =
   ny_noaa_df |>
@@ -304,6 +305,24 @@ citi_df |>
 
 Median duration across both years is lower in the January month than the July month. The highest median duration for rides was on the weekends in July 2020. Generally, Saturdays during all years and months were among the highest median ride durations. 
 
-There were relatively few electric Citi Bikes in 2020, but many more are available now. For data in 2024, make a figure that shows the impact of month, membership status, and bike type on the distribution of ride duration. Comment on your results.
+#### Month, membership, status, and bike type relating to duration
 
+```{r}
+citi_df |>
+  filter(year == 2024) |>
+  ggplot(aes(
+    x = rideable_type,
+    y = duration,
+    fill = rideable_type
+  )) +
+  geom_boxplot() +
+  facet_grid(member_casual ~ month) +
+  labs(
+    x = "Bike type",
+    y = "Ride duration (minutes)",
+    fill = "Bike type"
+  ) +
+  scale_y_log10()
+```
 
+Casual users spent longer durations on classic bikes, while members spent longer durations on electric bikes. This might be due to factors such as higher cost of electric bikes for non-members or other factors. Additionally, casual riders generally spent longer durations on bikes than members. Perhaps this could be due to the nature of activities members versus non members use citi bikes for (ie work versus recreation). Rides were generally longer in July as compared to January. 
